@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  laravel-backend:
+    build:
+      context: ./backend
+    container_name: asm_backend
+    restart: always
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=ASM_database
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=1234
+      - VIRTUAL_HOST=dev.sistemasumgcoban.com.gt     # Puedes asignarle subdominio
+      - LETSENCRYPT_HOST=dev.sistemasumgcoban.com.gt
+      - LETSENCRYPT_EMAIL=pablo2905andres@gmail.com
+    networks:
+      - web
+    expose:
+      - "9000"
+
+  postgres:
+    image: postgres:14
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: ASM_database
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - web
+
+volumes:
+  pgdata:
+
+networks:
+  web:
+    external: true
