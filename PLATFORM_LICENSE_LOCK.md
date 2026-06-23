@@ -3,7 +3,47 @@
 Sistema para **suspender ASMProlink** cuando el **cliente** (institución) no paga la licencia del software.  
 **No bloquea estudiantes por mora académica** — eso sigue en `BlockingService`.
 
-## Seguridad: por qué no basta con cambiar la BD
+---
+
+## Guía rápida (lo más simple)
+
+### En tu PC / servidor donde tienes la clave privada
+
+Doble clic en Windows (carpeta `blue_atlas_backend/scripts/`):
+
+| Archivo | Qué hace |
+|---------|----------|
+| `bloquear-plataforma.bat` | Bloquea **ya** (un solo paso) |
+| `desbloquear-plataforma.bat` | Desbloquea **ya** (un solo paso) |
+| `generar-token-bloqueo.bat` | Solo genera token para pegar en servidor remoto |
+| `generar-token-desbloqueo.bat` | Solo genera token de desbloqueo remoto |
+
+O por consola:
+
+```bash
+cd blue_atlas_backend
+php artisan platform:block      # BLOQUEAR (firma + aplica)
+php artisan platform:unblock    # DESBLOQUEAR (firma + aplica)
+php artisan platform:status     # Ver estado
+```
+
+### En servidor del cliente (sin clave privada)
+
+El cliente **no puede** bloquear ni desbloquear solo. Usted genera el token en su PC:
+
+```bash
+php artisan platform:block --token-only
+```
+
+Y en el servidor del cliente (solo aplica el token que usted envía):
+
+```bash
+php artisan platform:apply-license "PEGAR_TOKEN_AQUI"
+```
+
+---
+
+## Seguridad: por qué el cliente no puede desactivarlo
 
 El estado `locked` en base de datos **no es confiable por sí solo**. Cada cambio debe traer una **firma RSA** generada con la **clave privada del proveedor**.
 
@@ -38,8 +78,7 @@ Guardar:
 ```env
 PLATFORM_LICENSE_ENFORCE=true
 PLATFORM_LICENSE_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
-PLATFORM_LICENSE_CONTACT_EMAIL=soporte@tuempresa.com
-PLATFORM_LICENSE_CONTACT_PHONE=+502 0000-0000
+PLATFORM_LICENSE_CONTACT_PHONES="+502 3218 0070"
 ```
 
 Migración:
@@ -58,38 +97,23 @@ php artisan platform:apply-license "TOKEN_BASE64_AQUI"
 
 ## 2. Bloquear cliente (falta de pago)
 
-**Solo en máquina del proveedor** (con clave privada):
+**Forma simple (recomendada):**
 
 ```bash
-php artisan platform:sign-license --locked=true --reason="Licencia suspendida por falta de pago. Regularice para reactivar."
+php artisan platform:block
 ```
 
-Copiar el token que imprime el comando y aplicarlo en el servidor del cliente:
-
-```bash
-php artisan platform:apply-license "TOKEN_BASE64..."
-```
-
-Efecto inmediato:
-- API responde **423** en casi todas las rutas
-- Login rechazado
-- Frontend muestra pantalla **Servicio suspendido**
+**Servidor remoto:** `php artisan platform:block --token-only` → copiar token → `platform:apply-license` en cliente.
 
 ---
 
 ## 3. Desbloquear cliente (pagó)
 
-**Solo en máquina del proveedor:**
-
 ```bash
-php artisan platform:sign-license --locked=false --reason="Licencia activa."
+php artisan platform:unblock
 ```
 
-Aplicar en servidor del cliente:
-
-```bash
-php artisan platform:apply-license "TOKEN_BASE64..."
-```
+Remoto: `php artisan platform:unblock --token-only`
 
 ---
 
